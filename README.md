@@ -15,7 +15,6 @@ A web-based application for managing church events, members, and communications.
 - Manage church events, including scheduling Sabbath School, Divine Service, Announcement, Pestor's Desk activities all in one place
 - Keep a record of church bulletin.
 - Update the user web application for church members to stay up to date.
-- ...
 
 ## Installation
 
@@ -28,10 +27,11 @@ npm install
 
 ### Usage
 
-Explain how users can use your application, including any commands, configurations, or UI interactions. For example:
+```bash
+- This application server is a serverless  function that runs on AWS Lambda.  It uses NestJS  as its framework. The frontend is built using NestJs v14 with ContextAPI for state management.
+# ANd it was built to assist in the Adventist church activities
 
-```markdown
-## Usage
+```
 
  Start the server:
 
@@ -40,10 +40,10 @@ npm run start:dev
 
 ````
 
-```bash
 ### Contributing
 
-You are welcome to make contribution to this project, raise a Pull Request when you are done and it will me reviewed and merged.
+```bash
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would love to inprove on.
 
 ```
 
