@@ -1,0 +1,89 @@
+service: sdaogba-severless-api
+frameworkVersion: "3"
+useDotenv: true
+plugins:
+  - serverless-webpack
+  - serverless-prune-plugin
+  # - serverless-dotenv-plugin
+  - serverless-deployment-bucket
+custom:
+  prune:
+    automatic: true
+    number: 3
+  webpack:
+    webpackConfig: "webpack.config.js" # Name of webpack configuration file
+    includeModules: true # Node modules configuration for packaging
+    keepOutputDirectory: true
+    packager: "npm" # Packager that will be used to package your external modules
+    excludeFiles: src/**/*.spec.ts # Provide a glob for files to ignore
+  app:
+    stage: ${opt:stage, 'development'}
+    region: ${opt:region, 'us-east-1'}
+# params:
+  # default:
+    # appModulesLayer: "arn:aws:lambda:us-east-1:857209741727:layer:exquisBackendV2Dependency:12"
+  #   appEfsMountPath: "/mnt/efs"
+  #   appEfsArn:
+  #     Fn::GetAtt:
+  #       - efsAccessPointResource
+  #       - Arn
+  #   appSecurityGroupIds:
+  #     - sg-7641360d
+  #   appSubnetIds:
+  #     - subnet-7c702156
+  #     - subnet-863637f0
+  #     - subnet-ab7220f3
+  #     - subnet-6df19608
+  #     - subnet-3ac0f007
+  #     - subnet-cb7afbc7
+  # production:
+  #   domain: api-prod.exquis.com
+  #   domainWs: ws-prod.exquis.com
+  #   myCacheMaxAge: 30
+  # staging:
+  #   domain: api-staging.exquis.com
+  #   domainWs: ws-staging.exquis.com
+  #   myCacheMaxAge: 30
+provider:
+  name: aws
+  stage: ${self:custom.app.stage}
+  runtime: nodejs18.x
+  region: us-east-1
+  deploymentBucket:
+    name: sdaogba-severless-api-lambda
+  deploymentPrefix: sdaogba-severless-api
+  httpApi:
+    cors:
+      allowedOrigins: "*"
+      allowedHeaders:
+        - Content-Type
+        - Accept
+        - X-Amz-Date
+        - Authorization
+        - X-Api-Key
+        - X-Amz-Security-Token
+        - X-Amz-User-Agent
+        # - INCLUDE YOUR DESIRED HEADER HERE
+      allowedMethods: "*"
+      allowCredentials: false
+  # apiGateway:
+  #   minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
+  #   shouldStartNameWithService: true
+
+
+  # logs:
+  #   httpApi:
+  #     format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength", "integrationErrorMessage": "$context.integrationErrorMessage" }'
+  environment:
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    NODE_ENV: ${self:custom.app.stage}
+
+functions:
+  main:
+    name: ${self:service}-function-${self:custom.app.stage}
+    handler: dist/serverless.handler
+    timeout: 15
+    # layers:
+    #   - ${param:appModulesLayer}
+    events:
+      - httpApi: "*"
