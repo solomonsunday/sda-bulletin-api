@@ -1,9 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { AwsRepositoryService } from './aws-repository.service';
-import { AwsRepositoryController } from './aws-repository.controller';
 
+@Global()
 @Module({
-  controllers: [AwsRepositoryController],
   providers: [AwsRepositoryService],
+  exports: [AwsRepositoryService],
 })
 export class AwsRepositoryModule {}

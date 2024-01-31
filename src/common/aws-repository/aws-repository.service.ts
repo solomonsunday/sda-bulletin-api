@@ -1,49 +1,29 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   DescribeTableCommand,
   DescribeTableCommandInput,
   DynamoDBClient,
 } from '@aws-sdk/client-dynamodb';
 import {
-  BatchGetCommand,
-  BatchGetCommandInput,
-  BatchGetCommandOutput,
   BatchWriteCommand,
   DeleteCommand,
   DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
+  PutCommandInput,
+  PutCommandOutput,
   QueryCommand,
+  QueryCommandInput,
   QueryCommandOutput,
   TranslateConfig,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { marshallOptions, unmarshallOptions } from '@aws-sdk/util-dynamodb';
-
-import {
-  IPutCommandInput,
-  IPutCommandOutput,
-  IGetCommandInput,
-  IGetCommandOutput,
-  IBatchGetCommandInput,
-  IBatchGetCommandOutput,
-  IQueryCommandInput,
-  IQueryCommandOutput,
-  IUpdateCommandInput,
-  IUpdateCommandOutput,
-  IBatchWriteCommandInput,
-  IBatchWriteCommandOutput,
-  IDeleteCommandInput,
-  IDeleteCommandOutput,
-} from './aws-dynamo-operation.interface';
-import { UtilityService } from '../utility';
 import { EnvironmentConfig } from '../configuration';
 
 @Injectable()
 export class AwsRepositoryService {
   private dynamoDbFullClient: DynamoDBDocumentClient;
-
-  @Inject() private readonly utilityService: any;
 
   private marshallOptions: marshallOptions = {
     // Whether to automatically convert empty strings, blobs, and sets to null.
@@ -69,92 +49,29 @@ export class AwsRepositoryService {
   // - https://www.alexdebrie.com/posts/dynamodb-limits/
 
   /** dynamo-db put command */
-  async runPutCommand<TResponse>(
-    putParam: IPutCommandInput<TResponse>,
-  ): Promise<IPutCommandOutput<TResponse>> {
+  async runPutCommand<TResponse extends Record<string, any>>(
+    putParam: PutCommandInput,
+  ) {
     const responseData = await this.DynamoDbInstance().send(
       new PutCommand({
         ...putParam,
-        TableName:
-          putParam.TableName ||
-          EnvironmentConfig.WORKINANCE_AWS_DYNAMODB_TABLE_NAME,
+        TableName: putParam.TableName || process.env.TABLE_NAME,
         ReturnConsumedCapacity: 'TOTAL',
       }),
     );
-    responseData['Result'] = putParam.Item as TResponse;
-    return responseData as IPutCommandOutput<TResponse>;
+    responseData['Result'] = putParam.Item;
+    return responseData as PutCommandOutput & { Result: TResponse };
   }
 
   /*dynamo-db get command */
-  async runGetCommand<TResponse>(
-    getParam: IGetCommandInput<TResponse>,
-  ): Promise<IGetCommandOutput<TResponse>> {
-    const responseData = await this.DynamoDbInstance().send(
+  async runGetCommand(getParam: any) {
+    return await this.DynamoDbInstance().send(
       new GetCommand({
         ...getParam,
-        TableName:
-          getParam.TableName ||
-          EnvironmentConfig.WORKINANCE_AWS_DYNAMODB_TABLE_NAME,
+        TableName: getParam.TableName || EnvironmentConfig.TABLE_NAME,
         ReturnConsumedCapacity: 'TOTAL',
       }),
     );
-    responseData['Result'] = responseData.Item as TResponse;
-    return responseData as IGetCommandOutput<TResponse>;
-  }
-
-  /*dynamo-db batch get command */
-  async runBatchGetCommand<TResponse>({
-    batchGetParam,
-    returnAllAtOnce = false,
-  }: {
-    batchGetParam: IBatchGetCommandInput<TResponse>;
-    returnAllAtOnce?: boolean;
-  }) {
-    // https://dynobase.dev/dynamodb-batch-write-update-delete/
-    let queryResponse: BatchGetCommandOutput;
-    let responseData: TResponse[] = [];
-    // batchGetParam.ConsistentRead = true;
-    const newBatchParam = (await this.utilityService.SanitizeObject({
-      data: { ...batchGetParam },
-      keysToRemove: ['TableName'],
-    })) as Omit<IBatchGetCommandInput<TResponse>, 'TableName'>;
-
-    const paramFieldsToString = newBatchParam.Keys.map((key) =>
-      JSON.stringify(key),
-    );
-    const sanitizedParamStrings = [...new Set(paramFieldsToString)];
-    const sanitizedDuplicateBatchParam = sanitizedParamStrings
-      .map<typeof newBatchParam.Keys>((item) => JSON.parse(item))
-      .flat(); //.map(data=>);
-
-    newBatchParam.Keys = [...sanitizedDuplicateBatchParam];
-
-    do {
-      const batchQueryInput: BatchGetCommandInput = {
-        RequestItems: {
-          [batchGetParam.TableName]: { ...newBatchParam },
-        },
-      };
-      queryResponse = await this.DynamoDbInstance().send(
-        new BatchGetCommand({
-          ...batchQueryInput,
-          ReturnConsumedCapacity: 'TOTAL',
-        }),
-      );
-      responseData = [
-        ...responseData,
-        ...(queryResponse.Responses[batchGetParam.TableName] as TResponse[]),
-      ];
-      batchQueryInput.RequestItems = queryResponse.UnprocessedKeys;
-    } while (
-      queryResponse.UnprocessedKeys &&
-      Object.keys(queryResponse.UnprocessedKeys).length
-    );
-    return {
-      ...queryResponse,
-      // Responses: responseData,
-      Results: responseData,
-    } as IBatchGetCommandOutput<TResponse>;
   }
 
   // https://medium.com/cloud-native-the-gathering/querying-dynamodb-by-date-range-899b751a6ef2
@@ -165,77 +82,49 @@ export class AwsRepositoryService {
    * @param returnAllAtOnce:  if set to true, it returns all without limit .Else, it returns return the current data limit and pagination information.
    * @default returnAllAtOnce: false
    */
-  async runQueryCommand<TResponse>({
-    queryParam,
-    returnAllAtOnce = false,
-  }: {
-    queryParam: IQueryCommandInput<TResponse>;
-    returnAllAtOnce?: boolean;
-  }): Promise<IQueryCommandOutput<TResponse>> {
-    let queryResponse: QueryCommandOutput;
-    let responseData: TResponse[] = [];
-    do {
-      queryResponse = await this.DynamoDbInstance().send(
-        new QueryCommand({
-          ...queryParam,
-          TableName:
-            queryParam.TableName ||
-            EnvironmentConfig.WORKINANCE_AWS_DYNAMODB_TABLE_NAME,
-          ReturnConsumedCapacity: 'TOTAL',
-        }),
-      );
-      responseData = [...responseData, ...(queryResponse.Items as TResponse[])];
-      queryParam.ExclusiveStartKey =
-        queryResponse.LastEvaluatedKey as TResponse;
-    } while (
-      queryResponse.LastEvaluatedKey &&
-      Object.keys(queryResponse.LastEvaluatedKey).length &&
-      returnAllAtOnce
+  async runQueryCommand(
+    queryParam: QueryCommandInput,
+  ): Promise<QueryCommandOutput> {
+    return await this.DynamoDbInstance().send(
+      new QueryCommand({
+        ...queryParam,
+        TableName: queryParam.TableName || EnvironmentConfig.TABLE_NAME,
+        ReturnConsumedCapacity: 'TOTAL',
+      }),
     );
-    queryResponse.Items = responseData;
-    queryResponse['Results'] = responseData;
-    return queryResponse as IQueryCommandOutput<TResponse>;
   }
 
   /*dynamo-db update command */
   // https://stackoverflow.com/questions/55790894/dynamodb-timestamp-reserved-name-expression-attribute-name
   // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.Multiple
-  async runUpdateCommand<TResponse>(
-    updateParam: IUpdateCommandInput<TResponse>,
-  ): Promise<IUpdateCommandOutput<TResponse>> {
-    const result = await this.DynamoDbInstance().send(
+  async runUpdateCommand(updateParam: any) {
+    return await this.DynamoDbInstance().send(
       new UpdateCommand({
         ...updateParam,
         ReturnConsumedCapacity: 'TOTAL',
         ReturnValues: 'ALL_NEW',
       }),
     );
-    result['Result'] = result.Attributes;
-    return result as IUpdateCommandOutput<TResponse>;
   }
 
   /*dynamo-db batch update command */
-  async runBatchUpdateCommand(
-    batchUpdateParam: IBatchWriteCommandInput,
-  ): Promise<IBatchWriteCommandOutput> {
+  async runBatchUpdateCommand(batchUpdateParam: any) {
     return this.DynamoDbInstance().send(
       new BatchWriteCommand({
         ...batchUpdateParam,
         ReturnConsumedCapacity: 'TOTAL',
       }),
-    ) as unknown as IBatchWriteCommandOutput;
+    ) as unknown as any;
   }
 
   /*dynamo-db delete command */
-  async runDeleteCommand(
-    deleteParam: IDeleteCommandInput,
-  ): Promise<IDeleteCommandOutput> {
+  async runDeleteCommand(deleteParam: any) {
     return this.DynamoDbInstance().send(
       new DeleteCommand({
         ...deleteParam,
         ReturnConsumedCapacity: 'TOTAL',
       }),
-    ) as unknown as IDeleteCommandOutput;
+    );
   }
 
   /*dynamo-db batch delete command /
