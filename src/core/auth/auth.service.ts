@@ -11,10 +11,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { AwsRepositoryService } from 'src/common/aws-repository/aws-repository.service';
 import { EnvironmentConfig } from 'src/common';
 import bcrypt, { compare } from 'bcryptjs';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private awsRepositoryService: AwsRepositoryService) {}
+  constructor(
+    private awsRepositoryService: AwsRepositoryService,
+    private jwtService: JwtService,
+  ) {}
 
   async registerUser(signUpDto: SignUpDto) {
     const { Items: users } = await this.awsRepositoryService.runQueryCommand({
@@ -75,17 +79,20 @@ export class AuthService {
     });
     const user = users.at(0);
     if (!user) {
-      throw new NotFoundException('Username does not exist!!!');
+      throw new NotFoundException('Username does not exist!');
     }
 
     const isValidPassword = await compare(signinDto.password, user.password);
     if (!isValidPassword) {
-      throw new UnauthorizedException('Username or password incorrect');
+      throw new UnauthorizedException('Username or password is incorrect');
     }
+
+    const token = await this.jwtService.signAsync({ userId: user.userId });
+
     return {
       message: 'login successfully',
       data: {
-        token: '',
+        token,
         user: {
           id: user.id,
           firstName: user.firstName,

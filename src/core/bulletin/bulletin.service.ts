@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CreateBulletinDto } from './dto/create-bulletin.dto';
-import { UpdateBulletinDto } from './dto/update-bulletin.dto';
+import { CreateBulletinDto, UpdateBulletinDto } from './dto/bulletin.dto';
 
 @Injectable()
 export class BulletinService {
