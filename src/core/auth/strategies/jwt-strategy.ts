@@ -9,7 +9,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private awsRepositoryService: AwsRepositoryService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: EnvironmentConfig.TOP_SECRET,
+      secretOrKey: EnvironmentConfig.JWT_SECRET,
     });
   }
 

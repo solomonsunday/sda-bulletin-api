@@ -7,8 +7,11 @@ import {
 import {
   BatchWriteCommand,
   DeleteCommand,
+  DeleteCommandInput,
   DynamoDBDocumentClient,
   GetCommand,
+  GetCommandInput,
+  GetCommandOutput,
   PutCommand,
   PutCommandInput,
   PutCommandOutput,
@@ -17,6 +20,7 @@ import {
   QueryCommandOutput,
   TranslateConfig,
   UpdateCommand,
+  UpdateCommandInput,
 } from '@aws-sdk/lib-dynamodb';
 import { marshallOptions, unmarshallOptions } from '@aws-sdk/util-dynamodb';
 import { EnvironmentConfig } from '../configuration';
@@ -55,7 +59,7 @@ export class AwsRepositoryService {
     const responseData = await this.DynamoDbInstance().send(
       new PutCommand({
         ...putParam,
-        TableName: putParam.TableName || process.env.TABLE_NAME,
+        // TableName: putParam.TableName || process.env.TABLE_NAME,
         ReturnConsumedCapacity: 'TOTAL',
       }),
     );
@@ -64,14 +68,18 @@ export class AwsRepositoryService {
   }
 
   /*dynamo-db get command */
-  async runGetCommand(getParam: any) {
-    return await this.DynamoDbInstance().send(
+  async runGetCommand<TResponse extends Record<string, any>>(
+    getParam: GetCommandInput,
+  ) {
+    const responseData = await this.DynamoDbInstance().send(
       new GetCommand({
         ...getParam,
-        TableName: getParam.TableName || EnvironmentConfig.TABLE_NAME,
+        // TableName: getParam.TableName || EnvironmentConfig.TABLE_NAME,
         ReturnConsumedCapacity: 'TOTAL',
       }),
     );
+    responseData['Result'] = responseData.Item;
+    return responseData as GetCommandOutput & { Result: TResponse };
   }
 
   // https://medium.com/cloud-native-the-gathering/querying-dynamodb-by-date-range-899b751a6ef2
@@ -82,22 +90,24 @@ export class AwsRepositoryService {
    * @param returnAllAtOnce:  if set to true, it returns all without limit .Else, it returns return the current data limit and pagination information.
    * @default returnAllAtOnce: false
    */
-  async runQueryCommand(
+  async runQueryCommand<TResponse extends Record<string, any>>(
     queryParam: QueryCommandInput,
-  ): Promise<QueryCommandOutput> {
-    return await this.DynamoDbInstance().send(
+  ) {
+    const queryResult = await this.DynamoDbInstance().send(
       new QueryCommand({
         ...queryParam,
-        TableName: queryParam.TableName || EnvironmentConfig.TABLE_NAME,
+        // TableName: queryParam.TableName || EnvironmentConfig.TABLE_NAME,
         ReturnConsumedCapacity: 'TOTAL',
       }),
     );
+    queryResult['Results'] = queryResult.Items;
+    return queryResult as QueryCommandOutput & { Result: TResponse };
   }
 
   /*dynamo-db update command */
   // https://stackoverflow.com/questions/55790894/dynamodb-timestamp-reserved-name-expression-attribute-name
   // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.Multiple
-  async runUpdateCommand(updateParam: any) {
+  async runUpdateCommand(updateParam: UpdateCommandInput) {
     return await this.DynamoDbInstance().send(
       new UpdateCommand({
         ...updateParam,
@@ -118,7 +128,7 @@ export class AwsRepositoryService {
   }
 
   /*dynamo-db delete command */
-  async runDeleteCommand(deleteParam: any) {
+  async runDeleteCommand(deleteParam: DeleteCommandInput) {
     return this.DynamoDbInstance().send(
       new DeleteCommand({
         ...deleteParam,
@@ -146,10 +156,10 @@ export class AwsRepositoryService {
   private DynamoDbInstance(): DynamoDBDocumentClient {
     if (!this.dynamoDbFullClient) {
       const dynamoClient = new DynamoDBClient({
-        region: 'us-east-1',
+        region: EnvironmentConfig.REGION,
         credentials: {
-          accessKeyId: 'AKIAU6GDWNX2DZ4WHU3I',
-          secretAccessKey: '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',
+          accessKeyId: EnvironmentConfig.ACCESS_KEY_ID,
+          secretAccessKey: EnvironmentConfig.SECRET_ACCESS_KEY,
         },
       });
       this.dynamoDbFullClient = DynamoDBDocumentClient.from(

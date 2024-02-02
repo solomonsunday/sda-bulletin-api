@@ -6,4 +6,5 @@ export const EnvironmentConfig = {
   TABLE_NAME: process.env.TABLE_NAME,
   TOP_SECRET: process.env.TOP_SECRET,
   JWT_SECRET: process.env.JWT_SECRET,
+  REGION: process.env.REGION,
 } as const;
