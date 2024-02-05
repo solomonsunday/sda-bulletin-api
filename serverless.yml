@@ -50,7 +50,7 @@ provider:
   runtime: nodejs18.x
   region: us-east-1
   deploymentBucket:
-    name: sdaogba-severless-api-lambda
+    name: sdaogba-severless-api-339712830964
   deploymentPrefix: sdaogba-severless-api
   httpApi:
     cors:

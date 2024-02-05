@@ -48,7 +48,6 @@ export class AuthService {
         ...signUpDto,
       },
     });
-    console.log(newUser);
 
     // const token = await this.jwtService.signAsync({ userId: newUser.id });
 

@@ -10,6 +10,7 @@ import { SabathSchoolModule } from './core/sabath-school/sabath-school.module';
 import { AwsRepositoryModule } from './common/aws-repository/aws-repository.module';
 import { DivineServiceModule } from './core/divine-service/divine-service.module';
 import { BulletinModule } from './core/bulletin/bulletin.module';
+import { AnnouncementModule } from './core/announcement/announcement.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { BulletinModule } from './core/bulletin/bulletin.module';
     SabathSchoolModule,
     DivineServiceModule,
     BulletinModule,
+    AnnouncementModule,
   ],
   controllers: [AppController],
   providers: [

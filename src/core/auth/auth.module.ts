@@ -5,6 +5,7 @@ import { JwtStrategy } from './strategies/jwt-strategy';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { EnvironmentConfig } from 'src/common';
+require('dotenv').config();
 
 @Module({
   imports: [

@@ -45,9 +45,6 @@ export interface IBulletin extends IBaseEntity {
   benediction: string;
   doxology: string;
 
-  //   announcement
-  announcementDescription: string[];
-
   //   pastor's desk
   pastorDeskBibleVerse: string;
   pastorDeskBibleVerseDescription: string;
