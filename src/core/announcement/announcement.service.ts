@@ -7,6 +7,7 @@ import { AwsRepositoryService } from 'src/common/aws-repository/aws-repository.s
 import { EnvironmentConfig } from 'src/common';
 import { IAnnouncement } from './entities/announcement.interface';
 import { v4 as uuidv4 } from 'uuid';
+import { EntityName } from 'src/common/enum';
 
 @Injectable()
 export class AnnouncementService {
@@ -18,7 +19,7 @@ export class AnnouncementService {
         TableName: EnvironmentConfig.TABLE_NAME,
         Item: {
           id: uuidv4(),
-          entityName: 'announcement',
+          entityName: EntityName.ANNOUNCEMENT,
           createdDate: new Date().toISOString(),
           ...createAnnouncementDto,
         },
@@ -37,7 +38,7 @@ export class AnnouncementService {
         IndexName: 'entityName-createdDate-index',
         KeyConditionExpression: 'entityName = :entityName',
         ExpressionAttributeValues: {
-          ':entityName': 'announcement',
+          ':entityName': EntityName.ANNOUNCEMENT,
         },
       });
     return announcements;
@@ -47,7 +48,7 @@ export class AnnouncementService {
     const { Result: bulletin } =
       await this.awsRepositoryService.runGetCommand<IAnnouncement>({
         TableName: EnvironmentConfig.TABLE_NAME,
-        Key: { id, entityName: 'announcement' },
+        Key: { id, entityName: EntityName.ANNOUNCEMENT },
       });
     if (!bulletin) {
       throw new NotFoundException('announcement with this Id does not exist!');
@@ -78,7 +79,7 @@ export class AnnouncementService {
     await this.getAnnounceById(id); // check if exists
     await this.awsRepositoryService.runDeleteCommand({
       TableName: EnvironmentConfig.TABLE_NAME,
-      Key: { id, entityName: 'bulletin' },
+      Key: { id, entityName: EntityName.ANNOUNCEMENT },
     });
     return 'deleted successfully!';
   }

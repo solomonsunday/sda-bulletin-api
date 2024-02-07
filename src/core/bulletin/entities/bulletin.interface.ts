@@ -24,15 +24,17 @@ export interface IBulletin extends IBaseEntity {
   lessonSummaryBy: string;
   friendTimeBy: string;
   annnouncementClosingRemarkBy: string;
-  closingPrayerBy: string;
+  SSclosingPrayerBy: string;
+  SSClosingHymnNo: string;
+  SSClosingHymnBy: string;
 
   //   divine service dto
   prelude: string;
   callToWorshipHymnNo: string;
   callToWorshipBy: string;
   invocation: string;
-  divinceServiceOpeningHymnNo: string;
-  divinceServiceOpeningHymnBy: string;
+  divineServiceOpeningHymnNo: string;
+  divineServiceOpeningHymnBy: string;
   pastoralPrayer: string;
   pastoralPrayerBy: string;
   stewardshipBy: string;
