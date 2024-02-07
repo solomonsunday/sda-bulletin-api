@@ -62,7 +62,7 @@ export class BulletinService {
       Item: { ...bulletinObject },
     });
     return {
-      message: '',
+      message: 'updated successfully',
       data: bulletin,
     };
   }

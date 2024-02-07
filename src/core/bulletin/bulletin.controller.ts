@@ -12,7 +12,6 @@ import {
 import { BulletinService } from './bulletin.service';
 import { CreateBulletinDto, UpdateBulletinDto } from './dto/bulletin.dto';
 import { Response } from 'express';
-import { AuthGuard } from '@nestjs/passport';
 
 @Controller('bulletin')
 export class BulletinController {

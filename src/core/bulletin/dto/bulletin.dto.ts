@@ -20,45 +20,67 @@ export class CreateBulletinDto {
   @IsString()
   @IsOptional()
   singspirationTime: string;
+
   @IsString()
   @IsOptional()
   songLeader: string;
+
   @IsString()
   @IsOptional()
   openingPrayerBy: string;
+
   @IsString()
   @IsOptional()
   openningRemarkBy: string;
+
   @IsString()
   @IsOptional()
   openingHymn: string;
+
   @IsString()
   @IsOptional()
   openingHymnBy: string;
+
   @IsString()
   @IsOptional()
   keepingOnCourseBy: string;
+
   @IsString()
   @IsOptional()
   missionSpotlightBy: string;
+
   @IsString()
   @IsOptional()
   lessonIntroductionBy: string;
+
   @IsString()
   @IsOptional()
   unitActivities: string;
+
   @IsString()
   @IsOptional()
   lessonSummaryBy: string;
+
   @IsString()
   @IsOptional()
   friendTimeBy: string;
+
+  @IsString()
+  @IsOptional()
+  specialFeature: string;
+
   @IsString()
   @IsOptional()
   annnouncementClosingRemarkBy: string;
   @IsString()
   @IsOptional()
-  closingPrayerBy: string;
+  SSclosingPrayerBy: string;
+  @IsString()
+  @IsOptional()
+  SSClosingHymnBy: string;
+  @IsString()
+  @IsOptional()
+  SSClosingHymnNo: string;
 
   //   divine service dto
   @IsString()
@@ -79,13 +101,19 @@ export class CreateBulletinDto {
 
   @IsString()
   @IsOptional()
-  divinceServiceOpeningHymnNo: string;
+  divineServiceOpeningHymnNo: string;
+
   @IsString()
   @IsOptional()
-  divinceServiceOpeningHymnBy: string;
+  sermonTitle: string;
+
   @IsString()
   @IsOptional()
-  pastoralPrayer: string;
+  preacher: string;
+
+  @IsString()
+  @IsOptional()
+  divineServiceOpeningHymnBy: string;
   @IsString()
   @IsOptional()
   pastoralPrayerBy: string;

@@ -19,6 +19,7 @@ export interface IBulletin extends IBaseEntity {
   keepingOnCourseBy: string;
   missionSpotlightBy: string;
   lessonIntroductionBy: string;
+  specialFeature: string;
   unitActivities: string;
   lessonSummaryBy: string;
   friendTimeBy: string;
@@ -38,6 +39,8 @@ export interface IBulletin extends IBaseEntity {
   musicalSelectionBy: string;
   spiritualReadingBibleVerse: string;
   spiritualReadingBibleVerseBy: string;
+  sermonTitle: string;
+  preacher: string;
   hymnOfConcecrationNo: string;
   hymnOfConcecrationNoBy: string;
   divinceServiceClosingHymnNo: string;
