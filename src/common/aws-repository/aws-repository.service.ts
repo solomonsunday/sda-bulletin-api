@@ -5,7 +5,8 @@ import {
   DynamoDBClient,
 } from '@aws-sdk/client-dynamodb';
 import {
-  BatchWriteCommand,
+  BatchGetCommand,
+  BatchGetCommandInput,
   DeleteCommand,
   DeleteCommandInput,
   DynamoDBDocumentClient,
@@ -24,9 +25,13 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { marshallOptions, unmarshallOptions } from '@aws-sdk/util-dynamodb';
 import { EnvironmentConfig } from '../configuration';
+import { EntityName } from '../enum';
+import { CachingService } from '../caching/caching.service';
+import { IBulletin } from 'src/core/bulletin/entities/bulletin.interface';
 
 @Injectable()
 export class AwsRepositoryService {
+  constructor(private readonly cachingService: CachingService) {}
   private dynamoDbFullClient: DynamoDBDocumentClient;
 
   private marshallOptions: marshallOptions = {
@@ -65,6 +70,30 @@ export class AwsRepositoryService {
     );
     responseData['Result'] = putParam.Item;
     return responseData as PutCommandOutput & { Result: TResponse };
+  }
+
+  async getItemByID<TEntity extends Record<string, any>>({
+    id,
+    entityName,
+  }: {
+    id: string;
+    entityName: EntityName.BULLETIN;
+  }) {
+    let data = null;
+    const cachedData = await this.cachingService.getCahedData(id);
+    data = cachedData;
+    if (cachedData === null) {
+      const getParam: GetCommandInput = {
+        TableName: '',
+        Key: { id, entityName },
+      };
+
+      const res = await this.runGetCommand(getParam);
+      const resultData = res.Result ? { ...res.Result } : null;
+      await this.cachingService.setDataToCache(id, resultData as IBulletin);
+      data = resultData;
+    }
+    return data;
   }
 
   /*dynamo-db get command */
@@ -118,13 +147,13 @@ export class AwsRepositoryService {
   }
 
   /*dynamo-db batch update command */
-  async runBatchUpdateCommand(batchUpdateParam: any) {
+  async runBatchGetCommand<IResponse>(batchUpdateParam: BatchGetCommandInput) {
     return this.DynamoDbInstance().send(
-      new BatchWriteCommand({
+      new BatchGetCommand({
         ...batchUpdateParam,
         ReturnConsumedCapacity: 'TOTAL',
       }),
-    ) as unknown as any;
+    );
   }
 
   /*dynamo-db delete command */

@@ -16,7 +16,7 @@ require('dotenv').config();
         expiresIn: '3600s',
       },
     }),
-    PassportModule.register({ defaultStrategy: ['jwt '] }),
+    PassportModule.register({ defaultStrategy: ['jwt'] }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

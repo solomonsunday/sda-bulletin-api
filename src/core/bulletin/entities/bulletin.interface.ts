@@ -1,7 +1,8 @@
 import { IBaseEntity } from 'src/common/base.interface';
+import { IAnnouncement } from 'src/core/announcement/entities/announcement.interface';
 
 export interface IBulletin extends IBaseEntity {
-  status: 'published' | '';
+  status: BulletinStatusType;
 
   // welcome
   themeForTheQuarter: string;
@@ -53,4 +54,14 @@ export interface IBulletin extends IBaseEntity {
   //   pastor's desk
   pastorDeskBibleVerse: string;
   pastorDeskBibleVerseDescription: string;
+
+  announcementIds: string[];
+  announcements?: IAnnouncement[];
 }
+export enum BulletinStatusEnum {
+  DRAFT = 'draft',
+  PAST = 'past',
+  PUBLISHED = 'published',
+}
+
+export type BulletinStatusType = `${BulletinStatusEnum}`;

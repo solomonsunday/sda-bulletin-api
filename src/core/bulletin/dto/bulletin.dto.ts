@@ -1,5 +1,5 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { IsOptional, IsString } from 'class-validator';
+import { IsArray, IsOptional, IsString } from 'class-validator';
 
 export class CreateBulletinDto {
   // welcome
@@ -12,6 +12,10 @@ export class CreateBulletinDto {
   @IsString()
   @IsOptional()
   lessonMemoryTest: string;
+  @IsString()
+  @IsOptional()
+  lessonMemoryVerse: string;
+
   @IsString()
   @IsOptional()
   onLineZoomLink: string;
@@ -72,12 +76,15 @@ export class CreateBulletinDto {
   @IsString()
   @IsOptional()
   annnouncementClosingRemarkBy: string;
+
   @IsString()
   @IsOptional()
   SSclosingPrayerBy: string;
+
   @IsString()
   @IsOptional()
   SSClosingHymnBy: string;
+
   @IsString()
   @IsOptional()
   SSClosingHymnNo: string;
@@ -148,11 +155,6 @@ export class CreateBulletinDto {
   @IsOptional()
   doxology: string;
 
-  //   announcement
-  @IsString()
-  @IsOptional()
-  announcementDescription: string[];
-
   //   pastor's desk
   @IsString()
   @IsOptional()
@@ -160,6 +162,11 @@ export class CreateBulletinDto {
   @IsString()
   @IsOptional()
   pastorDeskBibleVerseDescription: string;
+
+  //   announcement
+  @IsArray()
+  @IsOptional()
+  announcementIds: string[];
 }
 
 export class UpdateBulletinDto extends PartialType(CreateBulletinDto) {}

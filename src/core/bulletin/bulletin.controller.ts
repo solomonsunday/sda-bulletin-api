@@ -8,12 +8,17 @@ import {
   Delete,
   Res,
   HttpStatus,
+  Query,
+  // UseGuards,
 } from '@nestjs/common';
 import { BulletinService } from './bulletin.service';
 import { CreateBulletinDto, UpdateBulletinDto } from './dto/bulletin.dto';
 import { Response } from 'express';
+import { BulletinStatusType } from './entities/bulletin.interface';
+// import { AuthGuard } from '@nestjs/passport';
 
 @Controller('bulletin')
+// @UseGuards(AuthGuard('jwt'))
 export class BulletinController {
   constructor(private readonly bulletinService: BulletinService) {}
 
@@ -28,10 +33,10 @@ export class BulletinController {
 
   @Get()
   async findAll(@Res() res: Response) {
-    const bulletinItem = await this.bulletinService.findAllBulletin();
+    const bulletinItems = await this.bulletinService.findAllBulletin();
     return res.status(200).json({
       statue: 'OK',
-      data: bulletinItem,
+      data: bulletinItems,
     });
   }
 
@@ -46,6 +51,22 @@ export class BulletinController {
     @Body() updateBulletinDto: UpdateBulletinDto,
   ) {
     return this.bulletinService.updateBulletin(id, updateBulletinDto);
+  }
+
+  @Patch(':id/status')
+  async updateStatus(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Query() query: { status: BulletinStatusType },
+  ) {
+    const data = await this.bulletinService.updateStatus({
+      bulletinId: id,
+      status: query.status,
+      currentUser: ' ',
+    });
+    return res.status(200).json({
+      message: data,
+    });
   }
 
   @Delete(':id')

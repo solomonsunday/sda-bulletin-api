@@ -11,6 +11,7 @@ import { AwsRepositoryModule } from './common/aws-repository/aws-repository.modu
 import { DivineServiceModule } from './core/divine-service/divine-service.module';
 import { BulletinModule } from './core/bulletin/bulletin.module';
 import { AnnouncementModule } from './core/announcement/announcement.module';
+import { CachingModule } from './common/caching/caching.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AnnouncementModule } from './core/announcement/announcement.module';
     DivineServiceModule,
     BulletinModule,
     AnnouncementModule,
+    CachingModule,
   ],
   controllers: [AppController],
   providers: [

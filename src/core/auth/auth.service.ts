@@ -12,6 +12,7 @@ import { AwsRepositoryService } from 'src/common/aws-repository/aws-repository.s
 import { EnvironmentConfig } from 'src/common';
 import bcrypt, { compare } from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
+import { EntityName } from 'src/common/enum';
 
 @Injectable()
 export class AuthService {
@@ -27,13 +28,13 @@ export class AuthService {
       KeyConditionExpression: 'entityName = :entityName',
       FilterExpression: 'userName = :userName',
       ExpressionAttributeValues: {
-        ':entityName': 'user',
+        ':entityName': EntityName.USER,
         ':userName': signUpDto.userName,
       },
     });
     const user = users.at(0);
     if (user) {
-      throw new UnprocessableEntityException('Username already registered!!!');
+      throw new UnprocessableEntityException('Username already exist!!!');
     }
 
     const salt = await bcrypt.genSalt();
@@ -43,18 +44,15 @@ export class AuthService {
       TableName: EnvironmentConfig.TABLE_NAME,
       Item: {
         id: uuidv4(),
-        entityName: 'user',
+        entityName: EntityName.USER,
         createdDate: new Date().toISOString(),
         ...signUpDto,
       },
     });
 
-    // const token = await this.jwtService.signAsync({ userId: newUser.id });
-
     return {
       message: 'user created successfully',
       data: {
-        token: '',
         user: {
           id: newUser.id,
           firstName: newUser.firstName,
@@ -72,7 +70,7 @@ export class AuthService {
       KeyConditionExpression: 'entityName = :entityName',
       FilterExpression: 'userName = :userName',
       ExpressionAttributeValues: {
-        ':entityName': 'user',
+        ':entityName': EntityName.USER,
         ':userName': signinDto.userName,
       },
     });
@@ -85,8 +83,14 @@ export class AuthService {
     if (!isValidPassword) {
       throw new UnauthorizedException('Username or password is incorrect');
     }
+    const payload = {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      userName: user.userName,
+    };
 
-    const token = await this.jwtService.signAsync({ userId: user.userId });
+    const token = await this.jwtService.signAsync(payload);
 
     return {
       message: 'login successfully',
