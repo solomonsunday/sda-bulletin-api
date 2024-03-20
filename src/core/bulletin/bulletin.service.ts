@@ -8,10 +8,12 @@ import {
   BulletinStatusEnum,
   BulletinStatusType,
   IBulletin,
+  QueryParamDto,
 } from './entities/bulletin.interface';
 import { EntityName } from 'src/common/enum';
 import { IAnnouncement } from '../announcement/entities/announcement.interface';
 import { CachingService } from 'src/common/caching/caching.service';
+import { QueryCommandInput } from '@aws-sdk/lib-dynamodb';
 
 @Injectable()
 export class BulletinService {
@@ -43,17 +45,47 @@ export class BulletinService {
     };
   }
 
-  async findAllBulletin() {
-    const { Items: bulletins } =
-      await this.awsRepositoryService.runQueryCommand({
-        TableName: EnvironmentConfig.TABLE_NAME,
-        IndexName: 'entityName-createdDate-index',
-        KeyConditionExpression: 'entityName = :entityName',
-        ExpressionAttributeValues: {
-          ':entityName': EntityName.BULLETIN,
-        },
-      });
-    return bulletins;
+  async findAllBulletin({
+    limit,
+    next_page_token,
+    start_date,
+    end_date,
+    search,
+  }: QueryParamDto) {
+    const queryParam: QueryCommandInput = {
+      TableName: EnvironmentConfig.TABLE_NAME,
+      IndexName: 'entityName-createdDate-index',
+      KeyConditionExpression: 'entityName = :entityName',
+      ExpressionAttributeValues: {
+        ':entityName': EntityName.BULLETIN,
+      },
+    };
+    if (limit) {
+      queryParam.Limit = +limit;
+    }
+    if (next_page_token) {
+      queryParam.ExclusiveStartKey = JSON.parse(next_page_token);
+    }
+    if (start_date && end_date) {
+      queryParam.FilterExpression = 'startDate BETWEEN :startDate AND :endDate';
+      queryParam.ExpressionAttributeValues = {
+        ...queryParam.ExpressionAttributeValues,
+        ':startDate': start_date,
+        ':endDate': end_date,
+      };
+    }
+    console.log(queryParam, 'queryParam');
+
+    const response =
+      await this.awsRepositoryService.runQueryCommand<IBulletin>(queryParam);
+    console.log(response, 'response');
+
+    const paginationToken = response.LastEvaluatedKey
+      ? JSON.stringify(response.LastEvaluatedKey)
+      : null;
+    const bulletins = response.Items;
+
+    return { bulletins, paginationToken };
   }
 
   async getBulletinById(bulletinId: string) {

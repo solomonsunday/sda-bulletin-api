@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -58,6 +59,7 @@ export class AuthService {
           firstName: newUser.firstName,
           lastName: newUser.lastName,
           userName: newUser.userName,
+          isVerified: newUser.isVerified,
         },
       },
     };
@@ -77,6 +79,10 @@ export class AuthService {
     const user = users.at(0);
     if (!user) {
       throw new NotFoundException('Username does not exist!');
+    }
+
+    if (!user.isVerified) {
+      throw new ForbiddenException('User not verified');
     }
 
     const isValidPassword = await compare(signinDto.password, user.password);
@@ -101,6 +107,7 @@ export class AuthService {
           firstName: user.firstName,
           lastName: user.lastName,
           userName: user.userName,
+          isVerified: user.isVerified,
         },
       },
     };
@@ -120,5 +127,25 @@ export class AuthService {
 
   remove(id: number) {
     return `This action removes a #${id} auth`;
+  }
+
+  async getUserById(userId: string): Promise<any> {
+    try {
+      const { Items: users } = await this.awsRepositoryService.runQueryCommand({
+        TableName: EnvironmentConfig.TABLE_NAME,
+        IndexName: 'entityName-createdDate-index',
+        KeyConditionExpression: 'entityName = :entityName',
+        FilterExpression: 'id = :id',
+        ExpressionAttributeValues: {
+          ':entityName': 'user',
+          ':id': userId,
+        },
+      });
+      const currentUser = users.at(0);
+      console.log(currentUser, 'user-at auth helper');
+      return currentUser;
+    } catch (error) {
+      console.log(error);
+    }
   }
 }

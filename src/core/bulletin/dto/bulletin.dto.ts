@@ -79,15 +79,15 @@ export class CreateBulletinDto {
 
   @IsString()
   @IsOptional()
-  SSclosingPrayerBy: string;
+  ssClosingPrayerBy: string;
 
   @IsString()
   @IsOptional()
-  SSClosingHymnBy: string;
+  ssClosingHymnBy: string;
 
   @IsString()
   @IsOptional()
-  SSClosingHymnNo: string;
+  ssClosingHymnNo: string;
 
   //   divine service dto
   @IsString()
@@ -167,6 +167,12 @@ export class CreateBulletinDto {
   @IsArray()
   @IsOptional()
   announcementIds: string[];
+
+  @IsString()
+  startDate: string;
+
+  @IsString()
+  endDate: string;
 }
 
 export class UpdateBulletinDto extends PartialType(CreateBulletinDto) {}

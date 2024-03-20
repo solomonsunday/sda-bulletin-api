@@ -25,9 +25,9 @@ export interface IBulletin extends IBaseEntity {
   lessonSummaryBy: string;
   friendTimeBy: string;
   annnouncementClosingRemarkBy: string;
-  SSclosingPrayerBy: string;
-  SSClosingHymnNo: string;
-  SSClosingHymnBy: string;
+  ssClosingPrayerBy: string;
+  ssClosingHymnNo: string;
+  ssClosingHymnBy: string;
 
   //   divine service dto
   prelude: string;
@@ -50,6 +50,8 @@ export interface IBulletin extends IBaseEntity {
   divinceServiceClosingHymnBy: string;
   benediction: string;
   doxology: string;
+  startDate: string;
+  endDate: string;
 
   //   pastor's desk
   pastorDeskBibleVerse: string;
@@ -60,8 +62,14 @@ export interface IBulletin extends IBaseEntity {
 }
 export enum BulletinStatusEnum {
   DRAFT = 'draft',
-  PAST = 'past',
   PUBLISHED = 'published',
 }
 
+export interface QueryParamDto {
+  limit: number;
+  start_date: string;
+  end_date: string;
+  search: string;
+  next_page_token: string;
+}
 export type BulletinStatusType = `${BulletinStatusEnum}`;

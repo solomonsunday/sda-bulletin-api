@@ -9,16 +9,21 @@ import {
   Res,
   HttpStatus,
   Query,
+  UseGuards,
   // UseGuards,
 } from '@nestjs/common';
 import { BulletinService } from './bulletin.service';
 import { CreateBulletinDto, UpdateBulletinDto } from './dto/bulletin.dto';
 import { Response } from 'express';
-import { BulletinStatusType } from './entities/bulletin.interface';
+import {
+  BulletinStatusType,
+  QueryParamDto,
+} from './entities/bulletin.interface';
+import { JwtAuthGuard } from '../auth/guards/jwt.auth.guard';
 // import { AuthGuard } from '@nestjs/passport';
 
+@UseGuards(JwtAuthGuard)
 @Controller('bulletin')
-// @UseGuards(AuthGuard('jwt'))
 export class BulletinController {
   constructor(private readonly bulletinService: BulletinService) {}
 
@@ -32,8 +37,8 @@ export class BulletinController {
   }
 
   @Get()
-  async findAll(@Res() res: Response) {
-    const bulletinItems = await this.bulletinService.findAllBulletin();
+  async findAll(@Res() res: Response, @Query() query: QueryParamDto) {
+    const bulletinItems = await this.bulletinService.findAllBulletin(query);
     return res.status(200).json({
       statue: 'OK',
       data: bulletinItems,

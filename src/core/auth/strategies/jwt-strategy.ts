@@ -1,11 +1,13 @@
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, ExtractJwt, VerifiedCallback } from 'passport-jwt';
+import { Strategy, ExtractJwt } from 'passport-jwt';
 import { EnvironmentConfig } from 'src/common';
-import { UnauthorizedException } from '@nestjs/common';
-import { AuthHeper } from '../auth.helper';
+import { Injectable } from '@nestjs/common';
+import { AuthService } from '../auth.service';
+import { IUser } from '../entities/auth.interface';
 
+@Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private authHelper: AuthHeper) {
+  constructor(private authService: AuthService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -13,34 +15,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(
-    payload: { userId: string; iat: number; exp: number },
-    done: VerifiedCallback,
-  ) {
-    // const { Items: users } = await this.awsRepositoryService.runQueryCommand({
-    //   TableName: EnvironmentConfig.TABLE_NAME,
-    //   IndexName: 'entityName-createdDate-index',
-    //   KeyConditionExpression: 'entityName = :entityName',
-    //   FilterExpression: 'userName = :userName',
-    //   ExpressionAttributeValues: {
-    //     ':entityName': 'user',
-    //     ':userName': payload.userName,
-    //   },
-    // });
-    // const user = users.at(0);
-    try {
-      console.log('got here');
-      if (!payload.userId) {
-        throw new UnauthorizedException();
-      }
-      const user = await this.authHelper.getUserByToken(payload.userId);
-      console.log(user, 'user-at jwt srategy');
-      if (!user) {
-        throw new UnauthorizedException();
-      }
-      return user;
-    } catch (error) {
-      console.log(error);
-    }
+  async validate(payload: { id: string; iat: number; exp: number }) {
+    const user: IUser = await this.authService.getUserById(payload.id);
+
+    delete user.password;
+    return user;
   }
 }

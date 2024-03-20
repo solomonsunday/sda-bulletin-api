@@ -13,7 +13,7 @@ require('dotenv').config();
       global: true,
       secret: EnvironmentConfig.JWT_SECRET,
       signOptions: {
-        expiresIn: '3600s',
+        expiresIn: '1d',
       },
     }),
     PassportModule.register({ defaultStrategy: ['jwt'] }),

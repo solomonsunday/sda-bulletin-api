@@ -8,6 +8,7 @@ import {
   Delete,
   Res,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { AnnouncementService } from './announcement.service';
 import {
@@ -15,7 +16,9 @@ import {
   UpdateAnnouncementDto,
 } from './dto/announcement.dto';
 import { Response } from 'express';
+import { JwtAuthGuard } from '../auth/guards/jwt.auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('announcement')
 export class AnnouncementController {
   constructor(private readonly announcementService: AnnouncementService) {}
