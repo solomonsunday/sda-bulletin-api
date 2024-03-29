@@ -14,11 +14,14 @@ import { EnvironmentConfig } from 'src/common';
 import bcrypt, { compare } from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { EntityName } from 'src/common/enum';
+import { IUser } from './entities/auth.interface';
+import { CachingService } from 'src/common/caching/caching.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private awsRepositoryService: AwsRepositoryService,
+    private cachingService: CachingService,
     private jwtService: JwtService,
   ) {}
 
@@ -113,16 +116,42 @@ export class AuthService {
     };
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async findAllUsers() {
+    const { Items: users } = await this.awsRepositoryService.runQueryCommand({
+      TableName: EnvironmentConfig.TABLE_NAME,
+      IndexName: 'entityName-createdDate-index',
+      KeyConditionExpression: 'entityName = :entityName',
+      ExpressionAttributeValues: {
+        ':entityName': EntityName.USER,
+      },
+    });
+    return users;
   }
 
   findOne(id: number) {
     return `This action returns a #${id} auth`;
   }
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
+  async update(
+    userId: string,
+    currentUser: IUser,
+    updateUserDto: UpdateAuthDto,
+  ) {
+    console.log(userId, 'userId');
+    const userData = await this.getUserById(userId);
+    const verifyUser = Object.assign({}, userData, {
+      updatedBy: currentUser.id,
+      ...updateUserDto,
+    });
+    const { Result: user } = await this.awsRepositoryService.runPutCommand({
+      TableName: EnvironmentConfig.TABLE_NAME,
+      Item: { ...verifyUser },
+    });
+    await this.cachingService.setDataToCache(userId, userData);
+    return {
+      message: 'user successfully verified',
+      data: user,
+    };
   }
 
   remove(id: number) {
@@ -142,7 +171,6 @@ export class AuthService {
         },
       });
       const currentUser = users.at(0);
-      console.log(currentUser, 'user-at auth helper');
       return currentUser;
     } catch (error) {
       console.log(error);

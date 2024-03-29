@@ -17,6 +17,8 @@ import {
 } from './dto/announcement.dto';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt.auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user-decorator';
+import { IUser } from '../auth/entities/auth.interface';
 
 @UseGuards(JwtAuthGuard)
 @Controller('announcement')
@@ -27,8 +29,10 @@ export class AnnouncementController {
   async create(
     @Res() res: Response,
     @Body() createAnnouncementDto: CreateAnnouncementDto,
+    @CurrentUser() currentUser: IUser,
   ) {
     const data = await this.announcementService.createAnnouncement(
+      currentUser,
       createAnnouncementDto,
     );
     return res.status(HttpStatus.CREATED).json(data);
@@ -53,9 +57,11 @@ export class AnnouncementController {
   update(
     @Param('id') id: string,
     @Body() updateAnnouncementDto: UpdateAnnouncementDto,
+    @CurrentUser() currentUser: IUser,
   ) {
     return this.announcementService.updateAnnouncement(
       id,
+      currentUser,
       updateAnnouncementDto,
     );
   }

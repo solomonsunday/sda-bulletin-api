@@ -13,6 +13,8 @@ import { AuthService } from './auth.service';
 import { SignInDto, SignUpDto } from './dto/auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { Response } from 'express';
+import { CurrentUser } from './decorators/current-user-decorator';
+import { IUser } from './entities/auth.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -29,9 +31,31 @@ export class AuthController {
     return res.status(HttpStatus.OK).json(data);
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
+  @Patch(':id/verify-user')
+  async verifyUser(
+    @Res() res: Response,
+    @Param('id') userId: string,
+    @Body() updateUserDto: UpdateAuthDto,
+    @CurrentUser() currentUser: IUser,
+  ) {
+    const data = await this.authService.update(
+      userId,
+      currentUser,
+      updateUserDto,
+    );
+    if (!data) {
+      return res.status(HttpStatus.BAD_REQUEST).json({ msg: 'User not found' });
+    } else {
+      return res.status(HttpStatus.OK).json(data);
+    }
+  }
+
+  @Get('users')
+  async findAll(@Res() res: Response) {
+    const users = await this.authService.findAllUsers();
+    return res.status(HttpStatus.OK).json({
+      data: users,
+    });
   }
 
   @Get(':id')
@@ -39,10 +63,10 @@ export class AuthController {
     return this.authService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
+  //   return this.authService.update(id, updateAuthDto);
+  // }
 
   @Delete(':id')
   remove(@Param('id') id: string) {

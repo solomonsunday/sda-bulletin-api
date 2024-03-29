@@ -14,6 +14,7 @@ import { EntityName } from 'src/common/enum';
 import { IAnnouncement } from '../announcement/entities/announcement.interface';
 import { CachingService } from 'src/common/caching/caching.service';
 import { QueryCommandInput } from '@aws-sdk/lib-dynamodb';
+import { IUser } from '../auth/entities/auth.interface';
 
 @Injectable()
 export class BulletinService {
@@ -22,7 +23,7 @@ export class BulletinService {
     private cachingService: CachingService,
   ) {}
 
-  async createBulletin(createBulletinDto: CreateBulletinDto) {
+  async createBulletin(user: IUser, createBulletinDto: CreateBulletinDto) {
     const { Result: createdBulletin } =
       await this.awsRepositoryService.runPutCommand<IBulletin>({
         TableName: EnvironmentConfig.TABLE_NAME,
@@ -31,7 +32,7 @@ export class BulletinService {
           entityName: 'bulletin',
           createdDate: new Date().toISOString(),
           status: BulletinStatusEnum.DRAFT,
-          // TODO:  include created by here
+          createdBy: user.id,
           ...createBulletinDto,
         },
       });
@@ -74,11 +75,9 @@ export class BulletinService {
         ':endDate': end_date,
       };
     }
-    console.log(queryParam, 'queryParam');
 
     const response =
       await this.awsRepositoryService.runQueryCommand<IBulletin>(queryParam);
-    console.log(response, 'response');
 
     const paginationToken = response.LastEvaluatedKey
       ? JSON.stringify(response.LastEvaluatedKey)
@@ -113,9 +112,14 @@ export class BulletinService {
     return bulletin;
   }
 
-  async updateBulletin(id: string, updateBulletinDto: UpdateBulletinDto) {
+  async updateBulletin(
+    id: string,
+    user: IUser,
+    updateBulletinDto: UpdateBulletinDto,
+  ) {
     const foundBulletin = await this.helpGetBulletinById(id);
     const bulletinObject = Object.assign({}, foundBulletin, {
+      updatedBy: user?.id,
       ...updateBulletinDto,
     });
     const { Result: bulletin } = await this.awsRepositoryService.runPutCommand({
@@ -137,7 +141,7 @@ export class BulletinService {
   }: {
     bulletinId: string;
     status: BulletinStatusType;
-    currentUser: string;
+    currentUser: IUser;
   }) {
     await this.helpGetBulletinById(bulletinId);
 
@@ -150,7 +154,7 @@ export class BulletinService {
       ExpressionAttributeValues: {
         ':status': status,
         ':updatedDate': new Date().toISOString(),
-        ':updatedBy': currentUser,
+        ':updatedBy': currentUser.id,
       },
     });
     await this.cachingService.setDataToCache(bulletinId, Attributes);

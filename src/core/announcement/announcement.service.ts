@@ -8,12 +8,16 @@ import { EnvironmentConfig } from 'src/common';
 import { IAnnouncement } from './entities/announcement.interface';
 import { v4 as uuidv4 } from 'uuid';
 import { EntityName } from 'src/common/enum';
+import { IUser } from '../auth/entities/auth.interface';
 
 @Injectable()
 export class AnnouncementService {
   constructor(private awsRepositoryService: AwsRepositoryService) {}
 
-  async createAnnouncement(createAnnouncementDto: CreateAnnouncementDto) {
+  async createAnnouncement(
+    currentUser: IUser,
+    createAnnouncementDto: CreateAnnouncementDto,
+  ) {
     const { Result: createdAnnouncement } =
       await this.awsRepositoryService.runPutCommand<IAnnouncement>({
         TableName: EnvironmentConfig.TABLE_NAME,
@@ -21,10 +25,10 @@ export class AnnouncementService {
           id: uuidv4(),
           entityName: EntityName.ANNOUNCEMENT,
           createdDate: new Date().toISOString(),
+          createdBy: currentUser.id,
           ...createAnnouncementDto,
         },
       });
-    console.log(createdAnnouncement, 'createdAnnouncement');
     return {
       message: 'announcement  created successfully',
       data: createdAnnouncement,
@@ -58,10 +62,12 @@ export class AnnouncementService {
 
   async updateAnnouncement(
     id: string,
+    currentUser: IUser,
     updateAnnouncementDto: UpdateAnnouncementDto,
   ) {
     const foundAnnouncement = await this.getAnnounceById(id);
     const announcementObject = Object.assign({}, foundAnnouncement, {
+      updatedBy: currentUser.id,
       ...updateAnnouncementDto,
     });
     const { Result: announcement } =

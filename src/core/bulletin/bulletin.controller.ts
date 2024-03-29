@@ -7,9 +7,9 @@ import {
   Param,
   Delete,
   Res,
-  HttpStatus,
   Query,
   UseGuards,
+  HttpStatus,
   // UseGuards,
 } from '@nestjs/common';
 import { BulletinService } from './bulletin.service';
@@ -20,6 +20,8 @@ import {
   QueryParamDto,
 } from './entities/bulletin.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt.auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user-decorator';
+import { IUser } from '../auth/entities/auth.interface';
 // import { AuthGuard } from '@nestjs/passport';
 
 @UseGuards(JwtAuthGuard)
@@ -31,8 +33,12 @@ export class BulletinController {
   async create(
     @Res() res: Response,
     @Body() createBulletinDto: CreateBulletinDto,
+    @CurrentUser() user: IUser,
   ) {
-    const data = await this.bulletinService.createBulletin(createBulletinDto);
+    const data = await this.bulletinService.createBulletin(
+      user,
+      createBulletinDto,
+    );
     return res.status(HttpStatus.CREATED).json(data);
   }
 
@@ -54,8 +60,9 @@ export class BulletinController {
   update(
     @Param('id') id: string,
     @Body() updateBulletinDto: UpdateBulletinDto,
+    @CurrentUser() user: IUser,
   ) {
-    return this.bulletinService.updateBulletin(id, updateBulletinDto);
+    return this.bulletinService.updateBulletin(id, user, updateBulletinDto);
   }
 
   @Patch(':id/status')
@@ -63,11 +70,12 @@ export class BulletinController {
     @Res() res: Response,
     @Param('id') id: string,
     @Query() query: { status: BulletinStatusType },
+    @CurrentUser() currentUser: IUser,
   ) {
     const data = await this.bulletinService.updateStatus({
       bulletinId: id,
       status: query.status,
-      currentUser: ' ',
+      currentUser,
     });
     return res.status(200).json({
       message: data,
