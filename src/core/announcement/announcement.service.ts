@@ -4,7 +4,6 @@ import {
   UpdateAnnouncementDto,
 } from './dto/announcement.dto';
 import { AwsRepositoryService } from 'src/common/aws-repository/aws-repository.service';
-import { EnvironmentConfig } from 'src/common';
 import { IAnnouncement } from './entities/announcement.interface';
 import { v4 as uuidv4 } from 'uuid';
 import { EntityName } from 'src/common/enum';
@@ -20,7 +19,7 @@ export class AnnouncementService {
   ) {
     const { Result: createdAnnouncement } =
       await this.awsRepositoryService.runPutCommand<IAnnouncement>({
-        TableName: EnvironmentConfig.TABLE_NAME,
+        // TableName: 'ogba-church-bulletin-development',
         Item: {
           id: uuidv4(),
           entityName: EntityName.ANNOUNCEMENT,
@@ -38,7 +37,7 @@ export class AnnouncementService {
   async getAnnouncements() {
     const { Items: announcements } =
       await this.awsRepositoryService.runQueryCommand({
-        TableName: EnvironmentConfig.TABLE_NAME,
+        // TableName: 'ogba-church-bulletin-development',
         IndexName: 'entityName-createdDate-index',
         KeyConditionExpression: 'entityName = :entityName',
         ExpressionAttributeValues: {
@@ -51,7 +50,7 @@ export class AnnouncementService {
   async getAnnounceById(id: string) {
     const { Result: bulletin } =
       await this.awsRepositoryService.runGetCommand<IAnnouncement>({
-        TableName: EnvironmentConfig.TABLE_NAME,
+        // TableName: 'ogba-church-bulletin-development',
         Key: { id, entityName: EntityName.ANNOUNCEMENT },
       });
     if (!bulletin) {
@@ -72,7 +71,7 @@ export class AnnouncementService {
     });
     const { Result: announcement } =
       await this.awsRepositoryService.runPutCommand({
-        TableName: EnvironmentConfig.TABLE_NAME,
+        // TableName: 'ogba-church-bulletin-development',
         Item: { ...announcementObject },
       });
     return {
@@ -84,7 +83,7 @@ export class AnnouncementService {
   async deleteAnnouncement(id: string) {
     await this.getAnnounceById(id); // check if exists
     await this.awsRepositoryService.runDeleteCommand({
-      TableName: EnvironmentConfig.TABLE_NAME,
+      // TableName: 'ogba-church-bulletin-development',
       Key: { id, entityName: EntityName.ANNOUNCEMENT },
     });
     return 'deleted successfully!';

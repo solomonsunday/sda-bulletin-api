@@ -43,6 +43,7 @@ export class AuthController {
       currentUser,
       updateUserDto,
     );
+    console.log(data);
     if (!data) {
       return res.status(HttpStatus.BAD_REQUEST).json({ msg: 'User not found' });
     } else {
@@ -56,11 +57,6 @@ export class AuthController {
     return res.status(HttpStatus.OK).json({
       data: users,
     });
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
   }
 
   // @Patch(':id')
