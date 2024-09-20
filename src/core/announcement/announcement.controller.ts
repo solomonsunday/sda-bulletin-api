@@ -49,12 +49,12 @@ export class AnnouncementController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string) {
     return this.announcementService.getAnnounceById(id);
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateAnnouncementDto: UpdateAnnouncementDto,
     @CurrentUser() currentUser: IUser,
@@ -67,7 +67,7 @@ export class AnnouncementController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string) {
     return this.announcementService.deleteAnnouncement(id);
   }
 }

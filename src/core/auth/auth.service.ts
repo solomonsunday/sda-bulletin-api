@@ -81,7 +81,9 @@ export class AuthService {
     }
 
     if (!user.isVerified) {
-      throw new ForbiddenException('User not verified');
+      throw new ForbiddenException(
+        'User not verified, kindly consult your admin!',
+      );
     }
 
     const isValidPassword = await compare(signinDto.password, user.password);
@@ -124,20 +126,19 @@ export class AuthService {
     return users;
   }
 
-  async update(
+  async verifyUser(
     userId: string,
     currentUser: IUser,
     updateUserDto: UpdateAuthDto,
   ) {
-    console.log(userId, 'userId');
     const userData = await this.getUserById(userId);
-    const verifyUser = Object.assign({}, userData, {
+    const verifyUserAccount = Object.assign({}, userData, {
       updatedBy: currentUser.id,
       ...updateUserDto,
-      // isVerified: !updateUserDto.isVerified,
+      isVerified: updateUserDto.isVerified,
     });
     const { Result: user } = await this.awsRepositoryService.runPutCommand({
-      Item: { ...verifyUser },
+      Item: { ...verifyUserAccount },
     });
     await this.cachingService.setDataToCache(userId, userData);
     return {
@@ -150,21 +151,18 @@ export class AuthService {
     return `This action removes a #${id} auth`;
   }
 
-  async getUserById(userId: string): Promise<any> {
-    try {
-      const { Items: users } = await this.awsRepositoryService.runQueryCommand({
-        IndexName: 'entityName-createdDate-index',
-        KeyConditionExpression: 'entityName = :entityName',
-        FilterExpression: 'id = :id',
-        ExpressionAttributeValues: {
-          ':entityName': 'user',
-          ':id': userId,
+  async getUserById(userId: string) {
+    const { Result: user } =
+      await this.awsRepositoryService.runGetCommand<IUser>({
+        Key: {
+          id: userId,
+          entityName: EntityName.USER,
         },
       });
-      const currentUser = users.at(0);
-      return currentUser;
-    } catch (error) {
-      console.log(error);
+    if (!user) {
+      throw new NotFoundException('user does not exist!');
     }
+    delete user.password;
+    return user;
   }
 }

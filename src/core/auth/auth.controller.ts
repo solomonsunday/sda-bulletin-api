@@ -8,6 +8,7 @@ import {
   Delete,
   Res,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignInDto, SignUpDto } from './dto/auth.dto';
@@ -15,6 +16,8 @@ import { UpdateAuthDto } from './dto/update-auth.dto';
 import { Response } from 'express';
 import { CurrentUser } from './decorators/current-user-decorator';
 import { IUser } from './entities/auth.interface';
+import { JwtAuthGuard } from './guards/jwt.auth.guard';
+
 
 @Controller('auth')
 export class AuthController {
@@ -30,25 +33,20 @@ export class AuthController {
     const data = await this.authService.signin(signinDto);
     return res.status(HttpStatus.OK).json(data);
   }
-
-  @Patch(':id/verify-user')
+  @UseGuards(JwtAuthGuard)
+  @Patch('verify-user/:id')
   async verifyUser(
     @Res() res: Response,
     @Param('id') userId: string,
     @Body() updateUserDto: UpdateAuthDto,
     @CurrentUser() currentUser: IUser,
   ) {
-    const data = await this.authService.update(
+    const data = await this.authService.verifyUser(
       userId,
       currentUser,
       updateUserDto,
     );
-    console.log(data);
-    if (!data) {
-      return res.status(HttpStatus.BAD_REQUEST).json({ msg: 'User not found' });
-    } else {
-      return res.status(HttpStatus.OK).json(data);
-    }
+    return res.status(HttpStatus.OK).json(data);
   }
 
   @Get('users')
@@ -58,11 +56,13 @@ export class AuthController {
       data: users,
     });
   }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-  //   return this.authService.update(id, updateAuthDto);
-  // }
+  @Get('user/:id')
+  async findOne(@Res() res: Response, @Param('id') id: string) {
+    const user = await this.authService.getUserById(id);
+    return res.status(HttpStatus.OK).json({
+      data: user,
+    });
+  }
 
   @Delete(':id')
   remove(@Param('id') id: string) {

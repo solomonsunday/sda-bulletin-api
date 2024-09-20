@@ -20,18 +20,18 @@ export class SabathSchoolService {
   }
 
   findAll() {
-    return `This action returns all sabathSchool`;
+    return `This action returns all sabbathSchool`;
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} sabathSchool`;
+    return `This action returns a #${id} sabbathSchool`;
   }
 
   update(id: number, updateSabathSchoolDto: any) {
-    return `This action updates a #${id} sabathSchool`;
+    return `This action updates a #${id} sabbathSchool`;
   }
 
   remove(id: number) {
-    return `This action removes a #${id} sabathSchool`;
+    return `This action removes a #${id} sabbathSchool`;
   }
 }
