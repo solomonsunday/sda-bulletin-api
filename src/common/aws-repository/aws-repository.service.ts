@@ -132,8 +132,10 @@ export class AwsRepositoryService {
         ReturnConsumedCapacity: 'TOTAL',
       }),
     );
+
     queryResult['Results'] = queryResult.Items;
-    return queryResult as QueryCommandOutput & { Result: TResponse };
+
+    return queryResult as QueryCommandOutput & { Results: TResponse };
   }
 
   /*dynamo-db update command */

@@ -9,6 +9,8 @@ export interface IBulletin extends IBaseEntity {
   topicForTheWeek: string;
   lessonMemoryTest: string;
   onLineZoomLink: string;
+  midweekPrayerZoomLink: string;
+  earlyMorningPrayerZoomLink: string;
 
   // sabbath school
   singspirationTime: string;
@@ -40,14 +42,14 @@ export interface IBulletin extends IBaseEntity {
   pastoralPrayerBy: string;
   stewardshipBy: string;
   musicalSelectionBy: string;
-  spiritualReadingBibleVerse: string;
-  spiritualReadingBibleVerseBy: string;
+  scripturalReadingBibleVerse: string;
+  scripturalReadingBibleVerseBy: string;
   sermonTitle: string;
   preacher: string;
   hymnOfConcecrationNo: string;
   hymnOfConcecrationNoBy: string;
-  divinceServiceClosingHymnNo: string;
-  divinceServiceClosingHymnBy: string;
+  divineServiceClosingHymnNo: string;
+  divineServiceClosingHymnBy: string;
   benediction: string;
   doxology: string;
   startDate: string;
@@ -71,5 +73,6 @@ export interface QueryParamDto {
   end_date: string;
   search: string;
   next_page_token: string;
+  current_date: string;
 }
 export type BulletinStatusType = `${BulletinStatusEnum}`;

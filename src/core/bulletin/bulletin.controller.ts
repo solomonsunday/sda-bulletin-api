@@ -24,11 +24,11 @@ import { CurrentUser } from '../auth/decorators/current-user-decorator';
 import { IUser } from '../auth/entities/auth.interface';
 // import { AuthGuard } from '@nestjs/passport';
 
-@UseGuards(JwtAuthGuard)
 @Controller('bulletin')
 export class BulletinController {
   constructor(private readonly bulletinService: BulletinService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post('create')
   async create(
     @Res() res: Response,
@@ -56,6 +56,7 @@ export class BulletinController {
     return this.bulletinService.getBulletinById(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -65,6 +66,7 @@ export class BulletinController {
     return this.bulletinService.updateBulletin(id, user, updateBulletinDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id/status')
   async updateStatus(
     @Res() res: Response,
@@ -72,7 +74,7 @@ export class BulletinController {
     @Query() query: { status: BulletinStatusType },
     @CurrentUser() currentUser: IUser,
   ) {
-    const data = await this.bulletinService.updateStatus({
+    const data = await this.bulletinService.updateBulletinStatus({
       bulletinId: id,
       status: query.status,
       currentUser,
@@ -82,6 +84,7 @@ export class BulletinController {
     });
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.bulletinService.deleteBulletin(id);

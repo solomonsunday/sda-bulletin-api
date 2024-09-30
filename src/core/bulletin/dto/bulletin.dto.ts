@@ -20,6 +20,14 @@ export class CreateBulletinDto {
   @IsOptional()
   onLineZoomLink: string;
 
+  @IsString()
+  @IsOptional()
+  midweekPrayerZoomLink: string
+
+  @IsString()
+  @IsOptional()
+  earlyMorningPrayerZoomLink: string
+
   // sabbath school
   @IsString()
   @IsOptional()
@@ -132,10 +140,10 @@ export class CreateBulletinDto {
   musicalSelectionBy: string;
   @IsString()
   @IsOptional()
-  spiritualReadingBibleVerse: string;
+  scripturalReadingBibleVerse: string;
   @IsString()
   @IsOptional()
-  spiritualReadingBibleVerseBy: string;
+  scripturalReadingBibleVerseBy: string;
   @IsString()
   @IsOptional()
   hymnOfConcecrationNo: string;
@@ -144,10 +152,10 @@ export class CreateBulletinDto {
   hymnOfConcecrationNoBy: string;
   @IsString()
   @IsOptional()
-  divinceServiceClosingHymnNo: string;
+  divineServiceClosingHymnNo: string;
   @IsString()
   @IsOptional()
-  divinceServiceClosingHymnBy: string;
+  divineServiceClosingHymnBy: string;
   @IsString()
   @IsOptional()
   benediction: string;

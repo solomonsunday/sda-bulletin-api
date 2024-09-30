@@ -48,6 +48,7 @@ export class BulletinService {
     next_page_token,
     start_date,
     end_date,
+    current_date,
     // search,
   }: QueryParamDto) {
     const queryParam: any = {
@@ -63,6 +64,7 @@ export class BulletinService {
     if (next_page_token) {
       queryParam.ExclusiveStartKey = JSON.parse(next_page_token);
     }
+
     if (start_date && end_date) {
       queryParam.FilterExpression = 'startDate BETWEEN :startDate AND :endDate';
       queryParam.ExpressionAttributeValues = {
@@ -72,40 +74,75 @@ export class BulletinService {
       };
     }
 
+    if (current_date) {
+      queryParam.FilterExpression =
+        '#startDate <= :currentDate AND  #endDate >= :currentDate';
+
+      queryParam.ExpressionAttributeNames = {
+        ...queryParam.ExpressionAttributeNames,
+        '#startDate': 'startDate',
+        '#endDate': 'endDate',
+      };
+
+      queryParam.ExpressionAttributeValues = {
+        ...queryParam.ExpressionAttributeValues,
+        ':currentDate': current_date,
+      };
+    }
+
     const response =
-      await this.awsRepositoryService.runQueryCommand<IBulletin>(queryParam);
+      await this.awsRepositoryService.runQueryCommand<IBulletin[]>(queryParam);
 
     const paginationToken = response.LastEvaluatedKey
       ? JSON.stringify(response.LastEvaluatedKey)
       : null;
-    const bulletins = response.Items;
+    const bulletins = response.Results;
 
-    return { bulletins, paginationToken };
+    const announcementIds = bulletins
+      .map((bulletin) => bulletin.announcementIds)
+      .flat();
+    const announcements =
+      await this.getBulletinsAnnouncementInBatch(announcementIds);
+
+    return {
+      bulletins: bulletins.map((bulletin) => {
+        return {
+          ...bulletin,
+          announcements: announcements.filter((announcement) =>
+            bulletin.announcementIds?.includes(announcement.id),
+          ),
+        };
+      }),
+      paginationToken,
+    };
   }
 
   async getBulletinById(bulletinId: string) {
     const bulletin = await this.helpGetBulletinById(bulletinId);
-    if (bulletin?.announcementIds) {
-      const announcementQuery =
-        bulletin.announcementIds?.map((announcementId) => {
-          return { id: announcementId, entityName: EntityName.ANNOUNCEMENT };
-        }) || [];
-
-      const { Responses } = await this.awsRepositoryService.runBatchGetCommand({
-        RequestItems: {
-          ['ogba-church-bulletin-development']: {
-            Keys: announcementQuery,
-          },
-        },
-      });
-
-      const announcements = Responses[
-        'ogba-church-bulletin-development'
-      ] as IAnnouncement[];
-      bulletin.announcements = announcements;
-    }
+    const announcements = await this.getBulletinsAnnouncementInBatch(
+      bulletin.announcementIds,
+    );
+    bulletin.announcements = announcements;
 
     return bulletin;
+  }
+
+  async getBulletinsAnnouncementInBatch(announcementIds: string[]) {
+    if (announcementIds.length === 0) return [];
+    const announcementQuery =
+      [...new Set(announcementIds)].map((announcementId) => {
+        if (announcementId)
+          return { id: announcementId, entityName: EntityName.ANNOUNCEMENT };
+      }) || [];
+    const { Responses } = await this.awsRepositoryService.runBatchGetCommand({
+      RequestItems: {
+        ['ogba-church-bulletin-development']: {
+          Keys: announcementQuery,
+        },
+      },
+    });
+
+    return Responses['ogba-church-bulletin-development'] as IAnnouncement[];
   }
 
   async updateBulletin(
@@ -129,7 +166,7 @@ export class BulletinService {
   }
 
   // https://stackoverflow.com/questions/48653365/update-attribute-timestamp-reserved-word
-  async updateStatus({
+  async updateBulletinStatus({
     bulletinId,
     status,
     currentUser,
