@@ -4,6 +4,7 @@ import { bootstrapApplication } from './app';
 
 async function bootstrap() {
   const { application } = await bootstrapApplication();
+  application.enableCors();
   await application.listen(3000);
   Logger.verbose('Server running on http://localhost:3000/api');
 }
