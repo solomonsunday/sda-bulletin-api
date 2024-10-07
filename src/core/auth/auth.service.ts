@@ -7,10 +7,9 @@ import {
 } from '@nestjs/common';
 import { SignInDto, SignUpDto } from './dto/auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
-import { scrypt as _scrypt } from 'crypto';
+// import { scrypt as _scrypt } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { AwsRepositoryService } from 'src/common/aws-repository/aws-repository.service';
-import { EnvironmentConfig } from 'src/common';
 import bcrypt, { compare } from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { EntityName } from 'src/common/enum';
@@ -27,7 +26,6 @@ export class AuthService {
 
   async registerUser(signUpDto: SignUpDto) {
     const { Items: users } = await this.awsRepositoryService.runQueryCommand({
-      TableName: EnvironmentConfig.TABLE_NAME,
       IndexName: 'entityName-createdDate-index',
       KeyConditionExpression: 'entityName = :entityName',
       FilterExpression: 'userName = :userName',
@@ -45,7 +43,6 @@ export class AuthService {
     signUpDto.password = await bcrypt.hash(signUpDto.password, salt);
 
     const { Result: newUser } = await this.awsRepositoryService.runPutCommand({
-      TableName: EnvironmentConfig.TABLE_NAME,
       Item: {
         id: uuidv4(),
         entityName: EntityName.USER,
@@ -70,7 +67,6 @@ export class AuthService {
 
   async signin(signinDto: SignInDto) {
     const { Items: users } = await this.awsRepositoryService.runQueryCommand({
-      TableName: EnvironmentConfig.TABLE_NAME,
       IndexName: 'entityName-createdDate-index',
       KeyConditionExpression: 'entityName = :entityName',
       FilterExpression: 'userName = :userName',
@@ -85,7 +81,9 @@ export class AuthService {
     }
 
     if (!user.isVerified) {
-      throw new ForbiddenException('User not verified');
+      throw new ForbiddenException(
+        'User not verified, kindly consult your admin!',
+      );
     }
 
     const isValidPassword = await compare(signinDto.password, user.password);
@@ -118,34 +116,29 @@ export class AuthService {
 
   async findAllUsers() {
     const { Items: users } = await this.awsRepositoryService.runQueryCommand({
-      TableName: EnvironmentConfig.TABLE_NAME,
       IndexName: 'entityName-createdDate-index',
       KeyConditionExpression: 'entityName = :entityName',
       ExpressionAttributeValues: {
         ':entityName': EntityName.USER,
       },
     });
+
     return users;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
-
-  async update(
+  async verifyUser(
     userId: string,
     currentUser: IUser,
     updateUserDto: UpdateAuthDto,
   ) {
-    console.log(userId, 'userId');
     const userData = await this.getUserById(userId);
-    const verifyUser = Object.assign({}, userData, {
+    const verifyUserAccount = Object.assign({}, userData, {
       updatedBy: currentUser.id,
       ...updateUserDto,
+      isVerified: updateUserDto.isVerified,
     });
     const { Result: user } = await this.awsRepositoryService.runPutCommand({
-      TableName: EnvironmentConfig.TABLE_NAME,
-      Item: { ...verifyUser },
+      Item: { ...verifyUserAccount },
     });
     await this.cachingService.setDataToCache(userId, userData);
     return {
@@ -158,22 +151,18 @@ export class AuthService {
     return `This action removes a #${id} auth`;
   }
 
-  async getUserById(userId: string): Promise<any> {
-    try {
-      const { Items: users } = await this.awsRepositoryService.runQueryCommand({
-        TableName: EnvironmentConfig.TABLE_NAME,
-        IndexName: 'entityName-createdDate-index',
-        KeyConditionExpression: 'entityName = :entityName',
-        FilterExpression: 'id = :id',
-        ExpressionAttributeValues: {
-          ':entityName': 'user',
-          ':id': userId,
+  async getUserById(userId: string) {
+    const { Result: user } =
+      await this.awsRepositoryService.runGetCommand<IUser>({
+        Key: {
+          id: userId,
+          entityName: EntityName.USER,
         },
       });
-      const currentUser = users.at(0);
-      return currentUser;
-    } catch (error) {
-      console.log(error);
+    if (!user) {
+      throw new NotFoundException('user does not exist!');
     }
+    delete user.password;
+    return user;
   }
 }

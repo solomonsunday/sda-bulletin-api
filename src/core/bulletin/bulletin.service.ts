@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { CreateBulletinDto, UpdateBulletinDto } from './dto/bulletin.dto';
 import { AwsRepositoryService } from 'src/common/aws-repository/aws-repository.service';
-import { EnvironmentConfig } from 'src/common';
 import {
   BulletinStatusEnum,
   BulletinStatusType,
@@ -13,7 +12,6 @@ import {
 import { EntityName } from 'src/common/enum';
 import { IAnnouncement } from '../announcement/entities/announcement.interface';
 import { CachingService } from 'src/common/caching/caching.service';
-import { QueryCommandInput } from '@aws-sdk/lib-dynamodb';
 import { IUser } from '../auth/entities/auth.interface';
 
 @Injectable()
@@ -26,7 +24,6 @@ export class BulletinService {
   async createBulletin(user: IUser, createBulletinDto: CreateBulletinDto) {
     const { Result: createdBulletin } =
       await this.awsRepositoryService.runPutCommand<IBulletin>({
-        TableName: EnvironmentConfig.TABLE_NAME,
         Item: {
           id: uuidv4(),
           entityName: 'bulletin',
@@ -51,10 +48,10 @@ export class BulletinService {
     next_page_token,
     start_date,
     end_date,
-    search,
+    current_date,
+    // search,
   }: QueryParamDto) {
-    const queryParam: QueryCommandInput = {
-      TableName: EnvironmentConfig.TABLE_NAME,
+    const queryParam: any = {
       IndexName: 'entityName-createdDate-index',
       KeyConditionExpression: 'entityName = :entityName',
       ExpressionAttributeValues: {
@@ -67,6 +64,7 @@ export class BulletinService {
     if (next_page_token) {
       queryParam.ExclusiveStartKey = JSON.parse(next_page_token);
     }
+
     if (start_date && end_date) {
       queryParam.FilterExpression = 'startDate BETWEEN :startDate AND :endDate';
       queryParam.ExpressionAttributeValues = {
@@ -76,40 +74,75 @@ export class BulletinService {
       };
     }
 
+    if (current_date) {
+      queryParam.FilterExpression =
+        '#startDate <= :currentDate AND  #endDate >= :currentDate';
+
+      queryParam.ExpressionAttributeNames = {
+        ...queryParam.ExpressionAttributeNames,
+        '#startDate': 'startDate',
+        '#endDate': 'endDate',
+      };
+
+      queryParam.ExpressionAttributeValues = {
+        ...queryParam.ExpressionAttributeValues,
+        ':currentDate': current_date,
+      };
+    }
+
     const response =
-      await this.awsRepositoryService.runQueryCommand<IBulletin>(queryParam);
+      await this.awsRepositoryService.runQueryCommand<IBulletin[]>(queryParam);
 
     const paginationToken = response.LastEvaluatedKey
       ? JSON.stringify(response.LastEvaluatedKey)
       : null;
-    const bulletins = response.Items;
+    const bulletins = response.Results;
 
-    return { bulletins, paginationToken };
+    const announcementIds = bulletins
+      .map((bulletin) => bulletin.announcementIds)
+      .flat();
+    const announcements =
+      await this.getBulletinsAnnouncementInBatch(announcementIds);
+
+    return {
+      bulletins: bulletins.map((bulletin) => {
+        return {
+          ...bulletin,
+          announcements: announcements.filter((announcement) =>
+            bulletin.announcementIds?.includes(announcement.id),
+          ),
+        };
+      }),
+      paginationToken,
+    };
   }
 
   async getBulletinById(bulletinId: string) {
     const bulletin = await this.helpGetBulletinById(bulletinId);
-    if (bulletin?.announcementIds) {
-      const announcementQuery =
-        bulletin.announcementIds?.map((announcementId) => {
-          return { id: announcementId, entityName: EntityName.ANNOUNCEMENT };
-        }) || [];
-
-      const { Responses } = await this.awsRepositoryService.runBatchGetCommand({
-        RequestItems: {
-          [EnvironmentConfig.TABLE_NAME]: {
-            Keys: announcementQuery,
-          },
-        },
-      });
-
-      const announcements = Responses[
-        EnvironmentConfig.TABLE_NAME
-      ] as IAnnouncement[];
-      bulletin.announcements = announcements;
-    }
+    const announcements = await this.getBulletinsAnnouncementInBatch(
+      bulletin.announcementIds,
+    );
+    bulletin.announcements = announcements;
 
     return bulletin;
+  }
+
+  async getBulletinsAnnouncementInBatch(announcementIds: string[]) {
+    if (announcementIds.length === 0) return [];
+    const announcementQuery =
+      [...new Set(announcementIds)].map((announcementId) => {
+        if (announcementId)
+          return { id: announcementId, entityName: EntityName.ANNOUNCEMENT };
+      }) || [];
+    const { Responses } = await this.awsRepositoryService.runBatchGetCommand({
+      RequestItems: {
+        ['ogba-church-bulletin-development']: {
+          Keys: announcementQuery,
+        },
+      },
+    });
+
+    return Responses['ogba-church-bulletin-development'] as IAnnouncement[];
   }
 
   async updateBulletin(
@@ -123,7 +156,6 @@ export class BulletinService {
       ...updateBulletinDto,
     });
     const { Result: bulletin } = await this.awsRepositoryService.runPutCommand({
-      TableName: EnvironmentConfig.TABLE_NAME,
       Item: { ...bulletinObject },
     });
     await this.cachingService.setDataToCache(id, bulletin);
@@ -134,7 +166,7 @@ export class BulletinService {
   }
 
   // https://stackoverflow.com/questions/48653365/update-attribute-timestamp-reserved-word
-  async updateStatus({
+  async updateBulletinStatus({
     bulletinId,
     status,
     currentUser,
@@ -146,7 +178,6 @@ export class BulletinService {
     await this.helpGetBulletinById(bulletinId);
 
     const { Attributes } = await this.awsRepositoryService.runUpdateCommand({
-      TableName: EnvironmentConfig.TABLE_NAME,
       Key: { id: bulletinId, entityName: EntityName.BULLETIN },
       UpdateExpression:
         'SET #status_ = :status, updatedDate = :updatedDate, updatedBy = :updatedBy',
@@ -164,7 +195,6 @@ export class BulletinService {
   async deleteBulletin(bulletinId: string) {
     await this.helpGetBulletinById(bulletinId);
     await this.awsRepositoryService.runDeleteCommand({
-      TableName: EnvironmentConfig.TABLE_NAME,
       Key: { id: bulletinId, entityName: 'bulletin' },
     });
     await this.cachingService.deleteDataFromCache(bulletinId);
@@ -173,12 +203,11 @@ export class BulletinService {
 
   private async helpGetBulletinById(bulletinId: string): Promise<IBulletin> {
     let bulletin: IBulletin = null;
-    let cacheData =
+    const cacheData =
       await this.cachingService.getCahedData<IBulletin>(bulletinId);
     bulletin = cacheData ? { ...cacheData } : null;
     if (!cacheData) {
       const result = await this.awsRepositoryService.runGetCommand<IBulletin>({
-        TableName: EnvironmentConfig.TABLE_NAME,
         Key: { id: bulletinId, entityName: EntityName.BULLETIN },
       });
       bulletin = result.Result;

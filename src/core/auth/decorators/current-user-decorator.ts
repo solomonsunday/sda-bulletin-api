@@ -11,7 +11,7 @@ export const CurrentUser = createParamDecorator(
     const request = context.switchToHttp().getRequest<Request>();
     const currentUser = request.user as IUser;
     if (!currentUser) {
-      throw new NotFoundException('User not found!');
+      throw new NotFoundException('user is not authenticated!');
     }
     return data ? currentUser?.[data] : currentUser;
   },

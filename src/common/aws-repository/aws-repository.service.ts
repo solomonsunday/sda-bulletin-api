@@ -59,12 +59,13 @@ export class AwsRepositoryService {
 
   /** dynamo-db put command */
   async runPutCommand<TResponse extends Record<string, any>>(
-    putParam: PutCommandInput,
+    putParam: Omit<PutCommandInput, 'TableName'> &
+      Partial<Pick<PutCommandInput, 'TableName'>>,
   ) {
     const responseData = await this.DynamoDbInstance().send(
       new PutCommand({
         ...putParam,
-        // TableName: putParam.TableName || process.env.TABLE_NAME,
+        TableName: putParam.TableName || 'ogba-church-bulletin-development',
         ReturnConsumedCapacity: 'TOTAL',
       }),
     );
@@ -98,12 +99,13 @@ export class AwsRepositoryService {
 
   /*dynamo-db get command */
   async runGetCommand<TResponse extends Record<string, any>>(
-    getParam: GetCommandInput,
+    getParam: Omit<GetCommandInput, 'TableName'> &
+      Partial<Pick<GetCommandInput, 'TableName'>>,
   ) {
     const responseData = await this.DynamoDbInstance().send(
       new GetCommand({
         ...getParam,
-        // TableName: getParam.TableName || EnvironmentConfig.TABLE_NAME,
+        TableName: getParam.TableName || 'ogba-church-bulletin-development',
         ReturnConsumedCapacity: 'TOTAL',
       }),
     );
@@ -120,27 +122,34 @@ export class AwsRepositoryService {
    * @default returnAllAtOnce: false
    */
   async runQueryCommand<TResponse extends Record<string, any>>(
-    queryParam: QueryCommandInput,
+    queryParam: Omit<QueryCommandInput, 'TableName'> &
+      Partial<Pick<QueryCommandInput, 'TableName'>>,
   ) {
     const queryResult = await this.DynamoDbInstance().send(
       new QueryCommand({
         ...queryParam,
-        // TableName: queryParam.TableName || EnvironmentConfig.TABLE_NAME,
+        TableName: queryParam.TableName || 'ogba-church-bulletin-development',
         ReturnConsumedCapacity: 'TOTAL',
       }),
     );
+
     queryResult['Results'] = queryResult.Items;
-    return queryResult as QueryCommandOutput & { Result: TResponse };
+
+    return queryResult as QueryCommandOutput & { Results: TResponse };
   }
 
   /*dynamo-db update command */
   // https://stackoverflow.com/questions/55790894/dynamodb-timestamp-reserved-name-expression-attribute-name
   // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html#Expressions.UpdateExpressions.Multiple
-  async runUpdateCommand(updateParam: UpdateCommandInput) {
+  async runUpdateCommand(
+    updateParam: Omit<UpdateCommandInput, 'TableName'> &
+      Partial<Pick<UpdateCommandInput, 'TableName'>>,
+  ) {
     return await this.DynamoDbInstance().send(
       new UpdateCommand({
         ...updateParam,
         ReturnConsumedCapacity: 'TOTAL',
+        TableName: updateParam.TableName || 'ogba-church-bulletin-development',
         ReturnValues: 'ALL_NEW',
       }),
     );
@@ -157,10 +166,14 @@ export class AwsRepositoryService {
   }
 
   /*dynamo-db delete command */
-  async runDeleteCommand(deleteParam: DeleteCommandInput) {
+  async runDeleteCommand(
+    deleteParam: Omit<DeleteCommandInput, 'TableName'> &
+      Partial<Pick<DeleteCommandInput, 'TableName'>>,
+  ) {
     return this.DynamoDbInstance().send(
       new DeleteCommand({
         ...deleteParam,
+        TableName: deleteParam.TableName || 'ogba-church-bulletin-development',
         ReturnConsumedCapacity: 'TOTAL',
       }),
     );
@@ -174,9 +187,14 @@ export class AwsRepositoryService {
 
 
 	/*get dynamo-db table information */
-  async getTableDetials(tableDetailsParam: DescribeTableCommandInput) {
+  async getTableDetials(
+    tableDetailsParam: Omit<DescribeTableCommandInput, 'TableName'> &
+      Partial<Pick<DescribeTableCommandInput, 'TableName'>>,
+  ) {
     return this.DynamoDbInstance().send(
       new DescribeTableCommand({
+        TableName:
+          tableDetailsParam.TableName || 'ogba-church-bulletin-development',
         ...tableDetailsParam,
       }),
     );
@@ -185,10 +203,10 @@ export class AwsRepositoryService {
   private DynamoDbInstance(): DynamoDBDocumentClient {
     if (!this.dynamoDbFullClient) {
       const dynamoClient = new DynamoDBClient({
-        region: EnvironmentConfig.REGION,
+        region: 'us-east-1',
         credentials: {
-          accessKeyId: EnvironmentConfig.ACCESS_KEY_ID,
-          secretAccessKey: EnvironmentConfig.SECRET_ACCESS_KEY,
+          accessKeyId: EnvironmentConfig.APP_ACCESS_KEY_ID,
+          secretAccessKey: EnvironmentConfig.APP_SECRET_ACCESS_KEY,
         },
       });
       this.dynamoDbFullClient = DynamoDBDocumentClient.from(
