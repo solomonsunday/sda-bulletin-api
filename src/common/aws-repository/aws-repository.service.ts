@@ -24,7 +24,7 @@ import {
   UpdateCommandInput,
 } from '@aws-sdk/lib-dynamodb';
 import { marshallOptions, unmarshallOptions } from '@aws-sdk/util-dynamodb';
-import { EnvironmentConfig } from '../configuration';
+// import { EnvironmentConfig } from '../configuration';
 import { EntityName } from '../enum';
 import { CachingService } from '../caching/caching.service';
 import { IBulletin } from 'src/core/bulletin/entities/bulletin.interface';
@@ -204,10 +204,10 @@ export class AwsRepositoryService {
     if (!this.dynamoDbFullClient) {
       const dynamoClient = new DynamoDBClient({
         region: 'us-east-1',
-        credentials: {
-          accessKeyId: EnvironmentConfig.APP_ACCESS_KEY_ID,
-          secretAccessKey: EnvironmentConfig.APP_SECRET_ACCESS_KEY,
-        },
+        // credentials: {
+        //   accessKeyId: EnvironmentConfig.APP_ACCESS_KEY_ID,
+        //   secretAccessKey: EnvironmentConfig.APP_SECRET_ACCESS_KEY,
+        // },
       });
       this.dynamoDbFullClient = DynamoDBDocumentClient.from(
         dynamoClient,

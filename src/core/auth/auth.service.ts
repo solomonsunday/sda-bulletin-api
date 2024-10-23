@@ -134,7 +134,6 @@ export class AuthService {
     const userData = await this.getUserById(userId);
     const verifyUserAccount = Object.assign({}, userData, {
       updatedBy: currentUser.id,
-      ...updateUserDto,
       isVerified: updateUserDto.isVerified,
     });
     const { Result: user } = await this.awsRepositoryService.runPutCommand({
@@ -162,7 +161,6 @@ export class AuthService {
     if (!user) {
       throw new NotFoundException('user does not exist!');
     }
-    delete user.password;
     return user;
   }
 }
